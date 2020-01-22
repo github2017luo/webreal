@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"time"
-	"webreal"
+	"github.com/myxtype/webreal"
 )
 
 type testBusiness struct {

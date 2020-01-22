@@ -1,4 +1,4 @@
-module webreal
+module github.com/myxtype/webreal
 
 go 1.13
 
