@@ -1,43 +1,45 @@
 package main
 
 import (
+	"github.com/myxtype/webreal"
 	"log"
 	"time"
-	"github.com/myxtype/webreal"
 )
 
-type testBusiness struct {
+type PushingBusiness struct {
 	sh *webreal.SubscriptionHub
 }
 
-func (t *testBusiness) OnConnect(client *webreal.Client) {
-	log.Printf("new client %d, query: %s\n", client.Id(), client.Query().Get("token"))
-	// 订阅一个
-	client.Subscribe(t.sh, "test")
+func (p *PushingBusiness) OnConnect(c *webreal.Client) {
+	c.Subscribe(p.sh, "hello")
+	log.Printf("New client %d", c.Id())
 }
 
-func (t *testBusiness) OnMessage(client *webreal.Client, msg *webreal.Message) {
-	log.Printf("client %d new message %v", client.Id(), msg.Data)
+func (p *PushingBusiness) OnMessage(c *webreal.Client, msg *webreal.Message) {
+	log.Printf("Client %d Message: %v", c.Id(), msg.Data)
 }
 
-func (t *testBusiness) OnClose(client *webreal.Client) error {
-	log.Printf("close client %d\n", client.Id())
-	// 一定得退订，否则有不可预知的错误
-	defer client.UnsubscribeAll(t.sh)
+func (p *PushingBusiness) OnClose(c *webreal.Client) error {
+	defer c.UnsubscribeAll(p.sh)
+	log.Printf("Client %d closed.", c.Id())
 	return nil
 }
 
 func main() {
 	var (
-		sh = webreal.NewSubscriptionHub()
-		bs = testBusiness{sh: sh}
+		sh   = webreal.NewSubscriptionHub()
+		push = PushingBusiness{sh: sh}
 	)
-	// 其他业务来主动推送
 	go func() {
 		for {
-			sh.Publish("test", []byte("test test"))
-			time.Sleep(time.Second)
+			tik := time.NewTicker(time.Second)
+
+			select {
+			case <-tik.C:
+				sh.Publish("hello", []byte("hello"))
+			}
 		}
 	}()
-	webreal.NewServer(&bs).Run("127.0.0.1:8060", "/ws")
+	server := webreal.NewServer(&push)
+	server.Run("127.0.0.1:8080", "/ws")
 }
