@@ -155,3 +155,8 @@ func (c *Client) Query() url.Values {
 func (c *Client) Request() *http.Request {
 	return c.req
 }
+
+// 关闭连接对象
+func (c *Client) Close() error {
+	return c.conn.Close()
+}
