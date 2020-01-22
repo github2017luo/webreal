@@ -6,23 +6,24 @@ import (
 )
 
 type Server struct {
-	sh *SubscriptionHub
-	bs Business
+	sh       *SubscriptionHub
+	bs       Business
+	upgrader websocket.Upgrader
 }
 
 func NewServer(bs Business) *Server {
 	return &Server{
 		bs: bs,
+		upgrader: websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
+		},
 	}
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	upGrader := websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
-	conn, err := upGrader.Upgrade(w, r, nil)
+	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return
 	}
