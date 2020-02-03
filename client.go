@@ -27,17 +27,19 @@ type Client struct {
 	writeChan chan []byte
 	conn      *websocket.Conn
 	bs        Business
+	sh        *SubscriptionHub
 	req       *http.Request
 	mu        sync.Mutex
 	channels  map[string]struct{}
 }
 
-func NewClient(conn *websocket.Conn, bs Business, req *http.Request) *Client {
+func NewClient(conn *websocket.Conn, bs Business, sh *SubscriptionHub, req *http.Request) *Client {
 	return &Client{
 		id:        atomic.AddInt64(&clientId, 1),
 		writeChan: make(chan []byte, 256),
 		conn:      conn,
 		bs:        bs,
+		sh:        sh,
 		channels:  map[string]struct{}{},
 		req:       req,
 	}
@@ -101,7 +103,7 @@ func (c *Client) writer() {
 }
 
 // 订阅
-func (c *Client) Subscribe(sh *SubscriptionHub, channel string) bool {
+func (c *Client) Subscribe(channel string) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -109,7 +111,7 @@ func (c *Client) Subscribe(sh *SubscriptionHub, channel string) bool {
 	if found {
 		return false
 	}
-	if sh.Subscribe(channel, c) {
+	if c.sh.Subscribe(channel, c) {
 		c.channels[channel] = struct{}{}
 		return true
 	}
@@ -117,22 +119,22 @@ func (c *Client) Subscribe(sh *SubscriptionHub, channel string) bool {
 }
 
 // 退订
-func (c *Client) Unsubscribe(sh *SubscriptionHub, channel string) {
+func (c *Client) Unsubscribe(channel string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if sh.Unsubscribe(channel, c) {
+	if c.sh.Unsubscribe(channel, c) {
 		delete(c.channels, channel)
 	}
 }
 
 // 退订所有
-func (c *Client) UnsubscribeAll(sh *SubscriptionHub) {
+func (c *Client) UnsubscribeAll() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	for channel := range c.channels {
-		sh.Unsubscribe(channel, c)
+		c.sh.Unsubscribe(channel, c)
 	}
 }
 

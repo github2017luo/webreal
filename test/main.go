@@ -7,11 +7,10 @@ import (
 )
 
 type PushingBusiness struct {
-	sh *webreal.SubscriptionHub
 }
 
 func (p *PushingBusiness) OnConnect(c *webreal.Client) {
-	c.Subscribe(p.sh, "hello")
+	c.Subscribe("hello")
 	log.Printf("New client %d", c.Id())
 }
 
@@ -20,7 +19,7 @@ func (p *PushingBusiness) OnMessage(c *webreal.Client, msg *webreal.Message) {
 }
 
 func (p *PushingBusiness) OnClose(c *webreal.Client) error {
-	defer c.UnsubscribeAll(p.sh)
+	defer c.UnsubscribeAll()
 	log.Printf("Client %d closed.", c.Id())
 	return nil
 }
@@ -28,7 +27,7 @@ func (p *PushingBusiness) OnClose(c *webreal.Client) error {
 func main() {
 	var (
 		sh   = webreal.NewSubscriptionHub()
-		push = PushingBusiness{sh: sh}
+		push = PushingBusiness{}
 	)
 	go func() {
 		for {
@@ -40,6 +39,6 @@ func main() {
 			}
 		}
 	}()
-	server := webreal.NewServer(&push)
+	server := webreal.NewServer(&push, sh)
 	server.Run("127.0.0.1:8080", "/ws")
 }

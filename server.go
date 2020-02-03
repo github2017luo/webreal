@@ -11,8 +11,9 @@ type Server struct {
 	upgrader websocket.Upgrader
 }
 
-func NewServer(bs Business) *Server {
+func NewServer(bs Business, sh *SubscriptionHub) *Server {
 	return &Server{
+		sh: sh,
 		bs: bs,
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
@@ -27,7 +28,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	NewClient(conn, s.bs, r).Run()
+	NewClient(conn, s.bs, s.sh, r).Run()
 }
 
 func (s *Server) Run(addr string, path string) error {
